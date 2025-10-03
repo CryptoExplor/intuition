@@ -370,17 +370,31 @@
             } catch (error) {
                 // FALLBACK: Use placeholders and a minimal ABI
                 CONTRACT_ADDRESS = "0x...YourDeployedContractAddress...";
+                // UPDATED ABI to match new contract
                 CONTRACT_ABI = [
-                    // Changed 'getCount' to 'count' to match the public state variable getter
                     { name: "count", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
                     { name: "fee", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
                     { name: "increment", type: "function", stateMutability: "payable", inputs: [], outputs: [] },
                     { name: "decrement", type: "function", stateMutability: "payable", inputs: [], outputs: [] },
                     { name: "resetCounter", type: "function", stateMutability: "nonpayable", inputs: [{ type: "uint256" }], outputs: [] },
                     { name: "owner", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
-                    { name: "getUserStats", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }, { type: "uint256" }, { type: "uint256" }, { type: "uint256" }] },
-                    { name: "getTopAddresses", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "address[]" }] },
-                    { name: "getTopCounts", type: "function", stateMutability: "view", inputs: [], outputs: [{ type: "uint256[]" }] },
+                    { name: "getUserStats", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }, { type: "uint256" }, { type: "uint256" }] },
+                    // NEW: getLeaderboard function
+                    {
+                        "name": "getLeaderboard",
+                        "type": "function",
+                        "stateMutability": "view",
+                        "inputs": [],
+                        "outputs": [
+                            {
+                                "components": [
+                                    { "name": "user", "type": "address" },
+                                    { "name": "count", "type": "uint256" }
+                                ],
+                                "type": "tuple[]"
+                            }
+                        ]
+                    }
                 ];
                 
                 if (error.message?.includes('HTTP error!')) {
@@ -559,41 +573,33 @@
 
         /**
          * Fetches and displays the top 50 users from the contract.
+         * UPDATED: Uses the new `getLeaderboard` function for a single API call.
          */
         async function fetchLeaderboard() {
             try {
-                const [addresses, counts] = await readContract(wagmiConfig, {
+                const leaderboardData = await readContract(wagmiConfig, {
                     address: CONTRACT_ADDRESS,
                     abi: CONTRACT_ABI,
-                    functionName: 'getTopAddresses',
+                    functionName: 'getLeaderboard',
                     chainId: INTUITION_CHAIN_ID_DEC,
-                }).then(async (addresses) => {
-                    const counts = await readContract(wagmiConfig, {
-                        address: CONTRACT_ADDRESS,
-                        abi: CONTRACT_ABI,
-                        functionName: 'getTopCounts',
-                        chainId: INTUITION_CHAIN_ID_DEC,
-                    });
-                    return [addresses, counts];
                 });
-                
 
                 ui.leaderboardList.innerHTML = "";
                 
-                if(addresses.length === 0){
+                if(leaderboardData.length === 0){
                     ui.leaderboardList.innerHTML = `<p class="text-sm text-gray-500 text-center">No entries yet.</p>`;
                 } else {
-                    for (let i = 0; i < addresses.length; i++) {
-                        const isCurrentUser = userAddress && addresses[i].toLowerCase() === userAddress.toLowerCase();
+                    leaderboardData.forEach((entry, i) => {
+                        const isCurrentUser = userAddress && entry.user.toLowerCase() === userAddress.toLowerCase();
                         const rowClass = isCurrentUser 
                             ? 'bg-indigo-900 ring-2 ring-indigo-500' // Darker background for current user
                             : i % 2 === 0 ? 'app-subtle-box' : '#1a1a1a'; // Alternate subtle backgrounds
                         
                         ui.leaderboardList.innerHTML += `<div class="flex justify-between items-center text-sm p-3 rounded-md transition-colors duration-200 ${rowClass}">
-                            <span class="font-mono text-sm">${i + 1}. ${formatAddress(addresses[i])}</span>
-                            <span class="font-bold text-lg">${counts[i].toString()}</span>
+                            <span class="font-mono text-sm">${i + 1}. ${formatAddress(entry.user)}</span>
+                            <span class="font-bold text-lg">${entry.count.toString()}</span>
                         </div>`;
-                    }
+                    });
                 }
                 ui.leaderboardContainer.style.display = "block";
                 ui.userRank.textContent = "";
@@ -606,6 +612,7 @@
         
         /**
          * Fetches user stats and updates the badge tier display.
+         * UPDATED: Reflects the new return signature of `getUserStats`.
          */
         async function updateBadge() {
             if (!userAddress || !CONTRACT_ADDRESS) {
@@ -613,7 +620,7 @@
                 return;
             }
             try {
-                // Call getUserStats which returns [increments, decrements, lastAction, tier]
+                // Call getUserStats which now returns [increments, decrements, tier]
                 const stats = await readContract(wagmiConfig, {
                     address: CONTRACT_ADDRESS,
                     abi: CONTRACT_ABI,
@@ -622,7 +629,7 @@
                     chainId: INTUITION_CHAIN_ID_DEC,
                 });
 
-                const tierValue = Number(stats[3]); // tier is the 4th element (index 3)
+                const tierValue = Number(stats[2]); // tier is now the 3rd element (index 2)
                 
                 let tierText = "No Badge";
                 if (tierValue === 7) tierText = "⭐ Legendary Badge (1000+ Actions)";
