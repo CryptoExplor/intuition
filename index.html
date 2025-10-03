@@ -9,19 +9,19 @@
     <meta property="og:title" content="Intuition Counter dApp">
     <meta property="og:description" content="The official Intuition Counter dApp on Farcaster. Increment the global counter and compete on the leaderboards.">
     <!-- NOTE: You should ensure this image URL is valid for Farcaster to display correctly -->
-    <meta property="og:image" content="https://intuition-counter.vercel.app/image.png">
+    <meta property="og:image" content="https://intuition-pi.vercel.app/image.png">
     
     <!-- Farcaster Mini App Metadata (Simplified for demonstration) -->
     <meta name="fc:miniapp" content='{
         "version":"1",
-        "imageUrl":"https://intuition-counter.vercel.app/image.png",
+        "imageUrl":"https://intuition-pi.vercel.app/image.png",
         "button":{
           "title":"Intuition Counter",
           "action":{
             "type":"launch_frame",
             "name":"LAUNCH",
-            "url":"https://intuition-counter.vercel.app",
-            "splashImageUrl":"https://intuition-counter.vercel.app/splash.png",
+            "url":"https://intuition-pi.vercel.app",
+            "splashImageUrl":"https://intuition-pi.vercel.app/splash.png",
             "splashBackgroundColor":"#1B1B1E"
           }
         }
@@ -248,7 +248,8 @@
           getChainId,
           switchChain,
           http,
-          waitForTransactionReceipt
+          waitForTransactionReceipt,
+          watchAccount
         } from 'https://esm.sh/@wagmi/core';
         import { farcasterMiniApp } from 'https://esm.sh/@farcaster/miniapp-wagmi-connector';
         import { parseEther } from 'https://esm.sh/viem'; 
@@ -324,6 +325,42 @@
             },
         });
         // --- END WAGMI CONFIGURATION ---
+
+        // --- Event Listener for Wallet Changes ---
+        watchAccount(wagmiConfig, {
+            onChange(account) {
+                // Handle user switching accounts or disconnecting
+                if (account.address && account.isConnected) {
+                    // User switched to a new account, treat as a new connection
+                    console.log('Account changed to:', account.address);
+                    userAddress = account.address;
+                    ui.userMeta.textContent = formatAddress(userAddress);
+                    setStatus('Intuition Testnet', 'text-green-500');
+                    updateConnectButton('CONNECTED');
+                    setActionButtonsEnabled(true);
+                    
+                    // Re-fetch all data for the new user
+                    updateCount(true);
+                    updateBadge();
+                    updateAdminUI();
+                    fetchLeaderboard();
+                    startAutoRefresh();
+                } else if (!account.isConnected && userAddress) {
+                    // User disconnected the wallet
+                    console.log('Wallet disconnected');
+                    userAddress = null;
+                    ui.userMeta.textContent = 'Not Connected';
+                    setStatus('Disconnected', 'text-gray-500');
+                    updateConnectButton('DISCONNECTED');
+                    setActionButtonsEnabled(false);
+                    stopAutoRefresh();
+                    ui.badgeTierContainer.classList.add('hidden');
+                    ui.adminControls.style.display = 'none';
+                    fetchLeaderboard(); // Refresh leaderboard to show non-user-specific view
+                    displayMessage('Wallet disconnected.', 'info');
+                }
+            },
+        });
 
 
         // --- UI Element References ---
