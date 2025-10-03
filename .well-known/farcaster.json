@@ -6,7 +6,7 @@
     "homeUrl": "https://intuition-pi.vercel.app",
     "imageUrl": "https://intuition-pi.vercel.app/image.png",
     "splashImageUrl": "https://intuition-pi.vercel.app/splash.png",
-    "splashBackgroundColor": "#222222",
+    "splashBackgroundColor": "#D4D4D4",
     "webhookUrl": "https://intuition-pi.vercel.app/api/webhook",
     "subtitle": "Intuition Counter dApp",
     "description": "The official Intuition Counter dApp on Farcaster. Increment the global counter and compete on the leaderboards.",
