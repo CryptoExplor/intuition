@@ -6,11 +6,15 @@
     "homeUrl": "https://intuition-pi.vercel.app",
     "imageUrl": "https://intuition-pi.vercel.app/image.png",
     "splashImageUrl": "https://intuition-pi.vercel.app/splash.png",
-    "splashBackgroundColor": "#D4D4D4",
+    "splashBackgroundColor": "#2C2C2C",
     "webhookUrl": "https://intuition-pi.vercel.app/api/webhook",
     "subtitle": "Intuition Counter dApp",
     "description": "The official Intuition Counter dApp on Farcaster. Increment the global counter and compete on the leaderboards.",
-    "primaryCategory": "utility"
+    "primaryCategory": "productivity",
+    "tags": [
+      "intuition"
+    ],
+    "buttonTitle": "Intuition Counter"
   },
   "accountAssociation": {
     "header": "eyJmaWQiOjYxMjA2NiwidHlwZSI6ImF1dGgiLCJrZXkiOiIweDE4MjhjNEJmNzhEQWI2NkI0QjdkZUJmYUEzOEYwQWQxMjVFYzhkMTUifQ",
